@@ -6,6 +6,10 @@ Sound is cut as a groove of depths into a [wax cylinder](https://en.wikipedia.or
 
 This is a _physical simulation_ of a phonograph's mechanics, which happen to play sound.
 
+[![Winding the spring and putting the cylinder on the mandrel](media/how-it-works.gif)](media/how-it-works.mp4)
+
+▶ [Watch the full video](media/how-it-works.mp4) (47 s, with sound): wind the spring, load the cylinder, then every step of _How it works_.
+
 ## Features
 
 - **Procedural flaws**: Hiss is the grain of the wax. Dust is bumps in the groove. A scratch clicks once per turn because the ball crosses it once per turn.
