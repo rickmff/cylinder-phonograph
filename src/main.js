@@ -22,15 +22,15 @@ import { flushGroove, markDirty, rebuildHC } from './groove-texture.js';
 import { BOXP, CRK, KEY_Y, KEY_Z0, LID_ON, LID_T, LID_TABLE, VOLK, crankM, keyM, levM, lidM, parts } from './scene.js';
 import { adaptQuality, lastVP, render, resize } from './render.js';
 import { hitCyl, pickMech, rayAt } from './picking.js';
-import { carriageX, coneG, endTurn, govTau, handStep, mechStep, moveNeedle, offAxisFc, volLaw, wow } from './mechanics.js';
+import { carriageX, coneG, endTurn, govTau, handStep, mechStep, moveNeedle, offAxisFc, volLaw, windUp, wow } from './mechanics.js';
 import { FIG } from './figures.js';
 import { BV, TOUR, TX, closeTour, openTour, showStep, tourLive } from './tour.js';
 import { closeDocs, openDocs } from './docs.js';
 import { bPlay, fmt, msg, msgT, renderShelf, say, showTip, tipFor, updateUI } from './hud.js';
 import { loadUserCyls } from './storage.js';
 import { SEGT, SWAP_PRE, chooseCylinder, cylPose, doSwapData } from './swap.js';
-import { clack, ratchet, setVol, spatialUpdate } from './audio.js';
-import { isAudioFile, shave, stopRec } from './recording.js';
+import { clack, ensureAudio, ratchet, setVol, spatialUpdate } from './audio.js';
+import { isAudioFile, shave, stopRec, togglePlay } from './recording.js';
 import { openFit } from './fit.js';
 import { setSpeed } from './controls.js';
 import { XMAX, XMIN, endScratch, scratchMove, startScratch, toggleLid, turnKey } from './input.js';
@@ -48,7 +48,7 @@ if(QS.has('tour'))setTimeout(()=>{openTour(+QS.get('tour')||0);Object.assign(cam
 if(QS.has('docs'))setTimeout(()=>openDocs(QS.get('docs')||undefined),0);
 if(QS.has('shelf')){$('#shelf').hidden=false;$('#bCyl').classList.add('on')}
 if(QS.has('fitdemo'))setTimeout(()=>openFit(new Float32Array(48000*145),48000,145),0);
-if(QS.has('cyl')&&CYLS.find(c=>c.id===QS.get('cyl')))doSwapData(QS.get('cyl'));
+if(QS.has('cyl')&&CYLS.find(c=>c.id===QS.get('cyl'))){doSwapData(QS.get('cyl'));swap.empty=false;state.cylU=0;state.pose=cylPose(0);mach.engaged=true;mach.lift=0;mach.spring=0.86}   // start with this cylinder on, wound
 if(QS.has('swapu')){swap.phase=1;swap.t=SWAP_PRE+(+QS.get('swapu'))*SEGT;swap.to=app.curId;swap.hold=true}
 if(QS.has('play')){mach.mode='play';mach.motorOn=true;mach.omega=OMEGA;mach.lev=1}
 if(QS.has('cuttest')){const sec=+QS.get('cuttest')||8;shave();const N=Math.floor(sec*RPS*SPR),sig=new Float32Array(N);
@@ -115,4 +115,4 @@ fontsReady.then(()=>{try{makeLabel(curCyl())}catch(e){console.warn(e)}});
 renderShelf();loadUserCyls();
 {const q=CYLS.filter(c=>!c.blank&&!c.data);const pump=()=>{const c=q.shift();if(!c)return;if(!c.data)c.data=genCyl(c);renderShelf();setTimeout(pump,400)};if(!QS.has('frames'))setTimeout(pump,2500)}
 requestAnimationFrame(frame);
-window.__fono={openTour,showStep,closeTour,openDocs,closeDocs,FIG,TX,BV,volLaw,govTau,coneG,offAxisFc,TOUR,startScratch,scratchMove,endScratch,hitCyl,lidM,keyM,toggleLid,turnKey,spatialUpdate,LID_ON,BOXP,KEY_Y,KEY_Z0,getLid:()=>[state.lidU,app.lidTarget],getKey:()=>[state.keyA,app.keyTarget],AE,setVol,VOLK,screenOf:p=>{const m=lastVP,x=m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],y=m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13],w=m[3]*p[0]+m[7]*p[1]+m[11]*p[2]+m[15],r=canvas.getBoundingClientRect();return[r.left+(x/w*0.5+0.5)*r.width,r.top+(0.5-y/w*0.5)*r.height]},levM,crankM,CRK,pickMech,rayAt,isAudioFile,doSwapData,CYLS,genCyl,chooseCylinder,swap,audioState:()=>AE.ctx?AE.ctx.state+'@'+AE.ctx.sampleRate:'none',state,parts,cam,camT,setView,mach,renderAudio,GDATA,SPR,NREV,FSG,AcousticRecorder,AcousticPlayer};
+window.__fono={ensureAudio,windUp,togglePlay,openTour,showStep,closeTour,openDocs,closeDocs,FIG,TX,BV,volLaw,govTau,coneG,offAxisFc,TOUR,startScratch,scratchMove,endScratch,hitCyl,lidM,keyM,toggleLid,turnKey,spatialUpdate,LID_ON,BOXP,KEY_Y,KEY_Z0,getLid:()=>[state.lidU,app.lidTarget],getKey:()=>[state.keyA,app.keyTarget],AE,setVol,VOLK,screenOf:p=>{const m=lastVP,x=m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],y=m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13],w=m[3]*p[0]+m[7]*p[1]+m[11]*p[2]+m[15],r=canvas.getBoundingClientRect();return[r.left+(x/w*0.5+0.5)*r.width,r.top+(0.5-y/w*0.5)*r.height]},levM,crankM,CRK,pickMech,rayAt,isAudioFile,doSwapData,CYLS,genCyl,chooseCylinder,swap,audioState:()=>AE.ctx?AE.ctx.state+'@'+AE.ctx.sampleRate:'none',state,parts,cam,camT,setView,mach,renderAudio,GDATA,SPR,NREV,FSG,AcousticRecorder,AcousticPlayer};

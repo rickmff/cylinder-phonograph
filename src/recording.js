@@ -37,6 +37,7 @@ function togglePlay(){ensureAudio();
  if(swap.phase){swap.autoplay=true;return}
  if(mach.mode==='rec'){stopRec();return}
  if(mach.mode==='play'&&mach.motorOn)mach.motorOn=false;
+ else if(swap.empty){say('no cylinder on the mandrel · choose one from the box');$('#shelf').hidden=false;$('#bCyl').classList.add('on');renderShelf()}
  else{const Tc=mach.nOff+mach.rot/(2*Math.PI);if(Tc>endTurn()-0.8||mach.rewind)moveNeedle(0.25);mach.rewind=false;if(mach.spring<0.02)say('spring run down · turn the crank');mach.mode='play';mach.motorOn=true}
  updateUI()}
 const isAudioFile=f=>!!f&&(/^(audio|video)\//.test(f.type||'')||/\.(mpe?g|mp[34]|m4a|aac|og[ga]|opus|wav|flac|webm|amr|3gp)$/i.test(f.name||'')||!f.type);

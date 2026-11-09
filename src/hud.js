@@ -1,7 +1,7 @@
 // The interface around the scene: tooltips, the menu, status messages, the shelf of cylinders.
 
 import { $ } from './context.js';
-import { app, mach } from './state.js';
+import { app, mach, swap } from './state.js';
 import { CYLS, curCyl } from './cylinders.js';
 import { deleteUserCyl } from './storage.js';
 import { chooseCylinder } from './swap.js';
@@ -26,7 +26,7 @@ function cylArt(wax,blank,add){
  let g='';if(!blank)for(let y=15;y<=49;y+=2.6)g+='<path d="M5 '+y.toFixed(1)+'a15 5 0 0 0 30 0" fill="none" stroke="rgba(0,0,0,.2)" stroke-width=".55"/>';
  return '<svg class="cy" viewBox="0 0 40 60" aria-hidden="true"><path d="M5 9v42a15 5 0 0 0 30 0V9" fill="url(#gw-'+wax+')"/>'+g+'<path d="M5 9v42a15 5 0 0 0 30 0V9" fill="url(#gw-sheen)"/><ellipse cx="20" cy="9" rx="15" ry="5" fill="'+WAXTOP[wax]+'"/><ellipse cx="20" cy="9.3" rx="9.6" ry="3.1" fill="rgba(0,0,0,.55)"/></svg>'}
 function renderShelf(){const L=$('#shelfList');if(!L)return;L.innerHTML='';
- for(const c of CYLS){if(c.blank)continue;const b=document.createElement('button');b.className='cyl'+(c.id===app.curId?' cur':'');
+ for(const c of CYLS){if(c.blank)continue;const b=document.createElement('button');b.className='cyl'+(c.id===app.curId&&!swap.empty?' cur':'');
   b.innerHTML='<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>'+cylArt(c.wax,!!c.blank,false)+'<em></em>';b.querySelector('em').textContent=c.title;b.setAttribute('aria-label',c.title);
   b.dataset.tip=c.title+(c.by?'\n'+c.by+(c.year?' · '+c.year:''):'')+(c.len?'\n'+fmt(c.len)+(c.rpm&&c.rpm!==160?' · '+c.rpm+' rpm':''):'')+(c.src?'\n'+c.src:'')+(c.user?'\nstored in this browser':'');
   b.onclick=()=>chooseCylinder(c.id,{autoplay:!c.blank});

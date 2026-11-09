@@ -3,19 +3,24 @@
 import { $ } from './context.js';
 import { V3 } from './math.js';
 import { HORN_D, HORN_L, RBU, RC, REPY, YM, ZM } from './constants.js';
-import { AE, mach, state } from './state.js';
+import { AE, mach, state, swap } from './state.js';
+import { CYLS } from './cylinders.js';
 import { GDATA, ROWS, SPR, traceAt } from './groove.js';
-import { cam, camTo, setView } from './camera.js';
+import { cam, camT, camTo, setView } from './camera.js';
 import { hornPt } from './scene.js';
 import { lastEye } from './render.js';
-import { coneG, offAxisFc } from './mechanics.js';
+import { coneG, offAxisFc, windUp } from './mechanics.js';
+import { chooseCylinder } from './swap.js';
 import { ART } from './figures.js';
 import { closeDocs, openDocs } from './docs.js';
 import { closeShelf, hideTip, setMenu } from './hud.js';
 import { ensureAudio } from './audio.js';
 import { togglePlay } from './recording.js';
 
-function startIfIdle(){ensureAudio();if(mach.mode!=='rec'&&!(mach.mode==='play'&&mach.motorOn))togglePlay()}
+function startIfIdle(){ensureAudio();if(mach.mode==='rec'||swap.phase)return;
+ if(mach.spring<0.12)windUp();   // a run-down spring: wind it first
+ if(swap.empty){chooseCylinder(CYLS[0].id,{autoplay:true});return}   // a bare mandrel: put the first cylinder on
+ if(!(mach.mode==='play'&&mach.motorOn))togglePlay()}
 const bellPos=()=>V3.add(hornPt(HORN_L),[state.cx,state.lift,0]);
 let tourSnap=null,tourSnapT=0;
 function liveSamples(c,W,H,now){   // a pressure wave arriving at the right, one number taken from it every tick: x[n] = p(n / fs), slowed down
@@ -110,7 +115,7 @@ const TOUR=[
  {h:'From array to 3D',eq:'texture',art:'texture',cam:()=>camTo([state.cx+0.0018,YM+RC,ZM+0.0012],0.28,0.52,0.0036)},
  {h:'The ball’s path',eq:'ball',live:liveBall,cam:()=>{setView('stylus');startIfIdle()}},
  {h:'Back to sound',eq:'playback',art:'playback',cam:()=>{camTo(bellPos(),Math.atan2(HORN_D[0],HORN_D[2]),Math.asin(HORN_D[1])+0.06,0.95)}},
- {h:'Sound in 3D',eq:'space',live:liveRadar,cam:()=>{setView('overview');startIfIdle()}},
+ {h:'Sound in 3D',eq:'space',live:liveRadar,orbit:8,cam:()=>{setView('overview');startIfIdle()}},   // orbit: one full turn around the machine, in seconds
  {h:'Clockwork, as equations',eq:'clock',live:liveClock,cam:()=>{setView('mechanism');startIfIdle()}}];
 let tourI=-1;
 const BOOK='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.6C10.2 5.3 7.7 4.7 4.5 4.7v12.6c3.2 0 5.7.6 7.5 1.9 1.8-1.3 4.3-1.9 7.5-1.9V4.7c-3.2 0-5.7.6-7.5 1.9zM12 6.6v12.6"/></svg>';
@@ -118,13 +123,16 @@ const TOUR_SEEN='phonograph-tour-seen';   // the help button pulses until the to
 function markTourSeen(){$('#bHelp').classList.add('seen');try{localStorage.setItem(TOUR_SEEN,'1')}catch(e){}}
 try{if(localStorage.getItem(TOUR_SEEN))$('#bHelp').classList.add('seen')}catch(e){}
 function openTour(i=0){markTourSeen();setMenu(false);closeShelf();hideTip();closeDocs();$('#tour').hidden=false;showStep(i)}
-function closeTour(){$('#tour').hidden=true;tourI=-1}
-function showStep(i){if(i<0||i>=TOUR.length)return;tourI=i;const S=TOUR[i];
+const orbit={left:0,last:null};   // camera turn still to go in this step (rad)
+function closeTour(){$('#tour').hidden=true;tourI=-1;orbit.left=0}
+function showStep(i){if(i<0||i>=TOUR.length)return;tourI=i;const S=TOUR[i];orbit.left=S.orbit?2*Math.PI:0;orbit.last=null;
  $('#tourArt').innerHTML=S.live?'<canvas id="tourCv"></canvas>':ART[S.art]();$('#tourH').textContent=S.h;$('#tourEq').textContent=TX[S.eq][0];$('#tourP').textContent=TX[S.eq][1];
  $('#tourDots').innerHTML=TOUR.map((_,k)=>'<i class="'+(k===i?'on':'')+'" data-k="'+k+'"></i>').join('')+'<button class="ib dbook" aria-label="Read the documentation">'+BOOK+'</button>';
  $('#tourPrev').disabled=i===0;$('#tourNext').setAttribute('aria-label',i===TOUR.length-1?'Read the documentation':'Next');tourSnap=null;if(S.live===liveClock)OMH.length=0;BV.t0=-1e9;try{S.cam()}catch(e){}}
 const tourFwd=()=>{if(tourI>=TOUR.length-1)openDocs();else showStep(tourI+1)};
-function tourLive(now){if(tourI<0||!TOUR[tourI].live)return;const cv=$('#tourCv');if(!cv)return;const dpr=Math.min(2,devicePixelRatio||1),W=cv.clientWidth,H=cv.clientHeight;if(!W||!H)return;
+function tourLive(now){
+ if(tourI>=0&&orbit.left>0){const dt=orbit.last===null?0:Math.min(0.05,(now-orbit.last)/1000),d=Math.min(orbit.left,2*Math.PI/TOUR[tourI].orbit*dt);orbit.last=now;camT.yaw+=d;orbit.left-=d}   // the listener walks around the horn
+ if(tourI<0||!TOUR[tourI].live)return;const cv=$('#tourCv');if(!cv)return;const dpr=Math.min(2,devicePixelRatio||1),W=cv.clientWidth,H=cv.clientHeight;if(!W||!H)return;
  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr)}const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,H);TOUR[tourI].live(c,W,H,now)}
 $('#bHelp').onclick=()=>openTour(0);$('#tourX').onclick=closeTour;$('#tourPrev').onclick=()=>showStep(tourI-1);$('#tourNext').onclick=tourFwd;
 $('#tourDots').onclick=e=>{if(e.target.closest&&e.target.closest('.dbook')){openDocs();return}const k=e.target&&e.target.dataset&&e.target.dataset.k;if(k!==undefined)showStep(+k)};

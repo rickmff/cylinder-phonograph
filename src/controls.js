@@ -2,7 +2,7 @@
 
 import { $ } from './context.js';
 import { AE, app, mach, state } from './state.js';
-import { moveNeedle } from './mechanics.js';
+import { moveNeedle, windUp } from './mechanics.js';
 import { bPlay, bRec, renderShelf, say } from './hud.js';
 import { ensureAudio } from './audio.js';
 import { recordFile, startRec, stopRec, togglePlay } from './recording.js';
@@ -10,7 +10,7 @@ import { recordFile, startRec, stopRec, togglePlay } from './recording.js';
 bPlay.onclick=togglePlay;
 bRec.onclick=()=>{if(mach.mode==='rec')stopRec();else startRec()};
 $('#bHome').onclick=()=>{if(mach.mode==='rec')return;ensureAudio();moveNeedle(0.25)};
-$('#bWind').onclick=()=>{if(mach.spring>0.985){say('the spring is already fully wound');return}app.crankTarget=state.crank+2*Math.PI*Math.min(6,Math.ceil((1-mach.spring)/0.07))};
+$('#bWind').onclick=()=>{if(!windUp())say('the spring is already fully wound')};
 $('#sens').oninput=e=>{AE.sens=0.25*Math.pow(16,+e.target.value)};
 $('#pCancel').onclick=()=>{$('#panel').hidden=true};
 $('#pFile').onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(f)recordFile(f)};

@@ -2,7 +2,7 @@
 // and the carriage that follows the feed screw.
 
 import { PITCH, XA } from './constants.js';
-import { mach } from './state.js';
+import { app, mach, state, swap } from './state.js';
 import { NREV } from './groove.js';
 import { curCyl } from './cylinders.js';
 
@@ -11,7 +11,7 @@ function mechStep(dt){
  const tgt=run?(mach.rpm/60*2*Math.PI)*mach.speed*Math.min(1,mach.spring/0.12):0;   // governor holds the set speed while the spring has torque
  if(!H.on){mach.omega+=(tgt-mach.omega)*(1-Math.exp(-dt/govTau(tgt,mach.omega,run)));if(!run&&Math.abs(mach.omega)<0.02)mach.omega=0}   // brake on: stops in a fraction of a second
  mach.spring=Math.max(0,mach.spring-(run?(H.on?tgt:Math.max(0,mach.omega)):0)*dt/(2*Math.PI*1100));   // a held cylinder makes the belt slip: the motor keeps running
- const tr=mach.transit;if(tr){tr.t+=dt;if(tr.t>=tr.dur){mach.nOff=Math.round(tr.T1-mach.rot/(2*Math.PI));mach.transit=null;mach.engaged=true}}
+ const tr=mach.transit;if(tr){tr.t+=dt;if(tr.t>=tr.dur){mach.nOff=Math.round(tr.T1-mach.rot/(2*Math.PI));mach.transit=null;mach.engaged=!swap.empty}}   // no cylinder: the stylus stays lifted
  mach.lift+=((mach.engaged?0:1)-mach.lift)*(1-Math.exp(-dt/0.09));mach.time+=dt}
 function govTau(tgt,om,run){return tgt>om?0.45:(run?0.9:0.32)} // governor lag: spin up, coast, brake
 function volLaw(v){return[v<=0.75?Math.pow(v/0.75,2):1+(v-0.75)/0.25,900+21000*Math.pow(Math.min(v,0.75)/0.75,2)]} // knob -> gain, damper cut-off (Hz)
@@ -24,4 +24,7 @@ function endTurn(){const c=curCyl();return Math.min(NREV+0.4,c&&c.len?c.len*(c.r
 function carriageX(rot){if(mach.drag)return mach.drag.x;const tr=mach.transit;if(tr){const u=Math.min(1,tr.t/tr.dur),e=u*u*(3-2*u);return tr.x0+(tr.x1-tr.x0)*e}return XA+PITCH*(mach.nOff+rot/(2*Math.PI))}
 function moveNeedle(T1){if(mach.mode!=='rec'&&T1>0.3)mach.rewind=false;T1=Math.max(0.15,Math.min(NREV-0.3,T1));const x0=carriageX(mach.rot),x1=XA+PITCH*T1;mach.transit={x0,x1,T1,t:0,dur:0.5+Math.min(1.0,Math.abs(x1-x0)*12)};mach.engaged=false}
 
-export { carriageX, coneG, endTurn, govTau, handStep, mechStep, moveNeedle, offAxisFc, volLaw, wow };
+// turn the crank by itself, up to six turns (7 % of the spring each); false when the spring is already full
+function windUp(){if(mach.spring>0.985)return false;app.crankTarget=state.crank+2*Math.PI*Math.min(6,Math.ceil((1-mach.spring)/0.07));return true}
+
+export { windUp, carriageX, coneG, endTurn, govTau, handStep, mechStep, moveNeedle, offAxisFc, volLaw, wow };

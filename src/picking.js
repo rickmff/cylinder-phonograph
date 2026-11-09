@@ -33,7 +33,7 @@ function screenOf(p){const m=lastVP,x=m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],y=m[1]
 function rayAt(cx,cy){if(!lastInvVP)return null;const r=canvas.getBoundingClientRect(),nx=(cx-r.left)/r.width*2-1,ny=1-(cy-r.top)/r.height*2,m=lastInvVP;
  const un=z=>{const X=m[0]*nx+m[4]*ny+m[8]*z+m[12],Y=m[1]*nx+m[5]*ny+m[9]*z+m[13],Z=m[2]*nx+m[6]*ny+m[10]*z+m[14],Wd=m[3]*nx+m[7]*ny+m[11]*z+m[15];return[X/Wd,Y/Wd,Z/Wd]};
  const p0=un(-1);return{o:p0,d:V3.norm(V3.sub(un(1),p0))}}
-function hitCyl(R){if(!R||swap.phase)return null;const{o,d}=R,oy=o[1]-YM,oz=o[2]-ZM,a=d[1]*d[1]+d[2]*d[2],b=2*(oy*d[1]+oz*d[2]),c=oy*oy+oz*oz-RC*RC,D=b*b-4*a*c;
+function hitCyl(R){if(!R||swap.phase||swap.empty)return null;const{o,d}=R,oy=o[1]-YM,oz=o[2]-ZM,a=d[1]*d[1]+d[2]*d[2],b=2*(oy*d[1]+oz*d[2]),c=oy*oy+oz*oz-RC*RC,D=b*b-4*a*c;
  if(D<0||a<1e-12)return null;const t=(-b-Math.sqrt(D))/(2*a);if(t<0)return null;const p=V3.add(o,V3.mul(d,t));return(p[0]<CYL0||p[0]>CYL0+CYLL)?null:p}
 function hitAt(cx,cy){const R=rayAt(cx,cy);if(!R)return null;const h=hitCyl(R);if(h)return h;const n=V3.norm(V3.sub(lastEye,cam.t)),dn=V3.dot(R.d,n);if(Math.abs(dn)<1e-6)return null;
  const t=V3.dot(V3.sub(cam.t,R.o),n)/dn;return t>0?V3.add(R.o,V3.mul(R.d,t)):null}
