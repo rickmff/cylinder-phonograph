@@ -26,7 +26,7 @@ Open [localhost:8000](http://localhost:8000). Edit, then reload. [`dev.mjs`](dev
 Nothing to install. Node 22+ runs the server, the build and the tests:
 
 ```bash
-$ npm run build   # dist/: index.html, src/
+$ npm run build   # dist/: index.html, og.png, src/
 $ npm test        # offline checks of the physics
 ```
 

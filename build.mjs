@@ -7,5 +7,5 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('.', import.meta.url)), dist = join(root, 'dist');
 
 rmSync(dist, { recursive: true, force: true });
-for (const f of ['index.html', 'src']) cpSync(join(root, f), join(dist, f), { recursive: true });
-console.log('dist/: index.html, src/');
+for (const f of ['index.html', 'og.png', 'src']) cpSync(join(root, f), join(dist, f), { recursive: true });
+console.log('dist/: index.html, og.png, src/');
