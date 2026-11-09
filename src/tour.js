@@ -120,8 +120,9 @@ const TOUR=[
 let tourI=-1;
 const BOOK='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.6C10.2 5.3 7.7 4.7 4.5 4.7v12.6c3.2 0 5.7.6 7.5 1.9 1.8-1.3 4.3-1.9 7.5-1.9V4.7c-3.2 0-5.7.6-7.5 1.9zM12 6.6v12.6"/></svg>';
 const TOUR_SEEN='phonograph-tour-seen';   // the help button pulses until the tour has been opened once in this browser
-function markTourSeen(){$('#bHelp').classList.add('seen');try{localStorage.setItem(TOUR_SEEN,'1')}catch(e){}}
-try{if(localStorage.getItem(TOUR_SEEN))$('#bHelp').classList.add('seen')}catch(e){}
+const helpButtons=()=>document.querySelectorAll('#bHelp,#bHelpTop');
+function markTourSeen(){helpButtons().forEach(b=>b.classList.add('seen'));try{localStorage.setItem(TOUR_SEEN,'1')}catch(e){}}
+try{if(localStorage.getItem(TOUR_SEEN))helpButtons().forEach(b=>b.classList.add('seen'))}catch(e){}
 function openTour(i=0){markTourSeen();setMenu(false);closeShelf();hideTip();closeDocs();$('#tour').hidden=false;showStep(i)}
 const orbit={left:0,last:null};   // camera turn still to go in this step (rad)
 function closeTour(){$('#tour').hidden=true;tourI=-1;orbit.left=0}
@@ -134,7 +135,7 @@ function tourLive(now){
  if(tourI>=0&&orbit.left>0){const dt=orbit.last===null?0:Math.min(0.05,(now-orbit.last)/1000),d=Math.min(orbit.left,2*Math.PI/TOUR[tourI].orbit*dt);orbit.last=now;camT.yaw+=d;orbit.left-=d}   // the listener walks around the horn
  if(tourI<0||!TOUR[tourI].live)return;const cv=$('#tourCv');if(!cv)return;const dpr=Math.min(2,devicePixelRatio||1),W=cv.clientWidth,H=cv.clientHeight;if(!W||!H)return;
  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr)}const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,H);TOUR[tourI].live(c,W,H,now)}
-$('#bHelp').onclick=()=>openTour(0);$('#tourX').onclick=closeTour;$('#tourPrev').onclick=()=>showStep(tourI-1);$('#tourNext').onclick=tourFwd;
+$('#bHelp').onclick=()=>openTour(0);$('#bHelpTop').onclick=()=>openTour(0);$('#tourX').onclick=closeTour;$('#tourPrev').onclick=()=>showStep(tourI-1);$('#tourNext').onclick=tourFwd;
 $('#tourDots').onclick=e=>{if(e.target.closest&&e.target.closest('.dbook')){openDocs();return}const k=e.target&&e.target.dataset&&e.target.dataset.k;if(k!==undefined)showStep(+k)};
 addEventListener('keydown',e=>{if($('#tour').hidden)return;if(e.key==='ArrowRight')tourFwd();else if(e.key==='ArrowLeft')showStep(tourI-1);else if(e.key==='Escape')closeTour()});
 
