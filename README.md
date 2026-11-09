@@ -1,108 +1,64 @@
-# Cylinder Phonograph
+# cylinder phonograph
 
-An Edison wax-cylinder phonograph in your browser. Sound is cut into a groove of numbers, the GPU carves those numbers into wax, and a tiny sapphire ball plays them back. No recording of a real phonograph is used: every crackle and wobble comes from the simulation.
+An Edison wax-cylinder phonograph simulated "from the groove up" in the browser: **[cylinder-phonograph.vercel.app](https://cylinder-phonograph.vercel.app)**.
 
-Plain ES modules, WebGL2 and Web Audio: no libraries, no bundler.
+Instead of playing an audio file, the sound is cut as a groove of depths into a spinning [wax cylinder](https://en.wikipedia.org/wiki/Phonograph_cylinder), and a 70 µm sapphire ball rides it back through a glass diaphragm and a horn. Nothing is sampled from a real phonograph: what you hear is how fast that ball moves, after the chain of an [acoustic-era](https://en.wikipedia.org/wiki/Acoustic_recording) machine.
 
-**Live: <https://cylinder-phonograph.vercel.app>**
+This is a _physical simulation_ of a phonograph's mechanics, which happen to play sound.
 
 ## Features
 
-- Record from the microphone, or drop an audio file to cut it onto a blank
-- Wind the spring with the crank and start it with the lever
-- Lift the reproducer and drop it anywhere on the cylinder
-- Grab the cylinder and scratch it, forwards and backwards
-- 3D sound: the horn is the source, the camera is your head
-- Zoom until one groove fills the screen: what you see is what you hear
+- **"Real", procedural flaws**: hiss is the grain of the wax, cut into the groove along with the sound. Dust is bumps in the depth table, and a scratch clicks once per turn because the ball crosses it once per turn. A cylinder's groove passes the stylus at the same speed from start to end, so nothing dulls toward the end, until the spring runs down and the pitch sags.
+- **Real physics, in real time**: a ball of finite radius in a parabolic cut (it can't reach the floor of a deep cut, nor enter a dip smaller than itself), a stylus that leaves the groove when its floating weight can't pull it down fast enough, a [governor](https://en.wikipedia.org/wiki/Centrifugal_governor) easing toward 160 rpm, a spring that lasts 1,100 turns, and [wow and flutter](https://en.wikipedia.org/wiki/Wow_and_flutter_measurement) that grow as it runs out. 48,000 steps a second.
+- **Cut your own**: record from the microphone, or drop an audio file on a blank. A file longer than the cylinder is trimmed, or cut slower, down to 120 rpm, as early cylinders were. Your cylinders stay in the browser.
+- **What you see is what you hear**: zoom until one groove fills the screen. The GPU draws the same array the ball reads.
+- **Sound in space**: the horn is the source and the camera is your head ([HRTF](https://en.wikipedia.org/wiki/Head-related_transfer_function)). Walk around the horn and it gets quieter and duller.
+- **No dependencies, no bundler**: plain ES modules, WebGL2 and Web Audio. The build copies files.
 
-## Controls
-
-| Action | Does |
-| --- | --- |
-| Drag the background | orbit · right-drag or Shift to pan · wheel or pinch to zoom |
-| Click the lever | start and stop · `Space` |
-| Drag the crank | wind the spring |
-| Drag the knob | volume · `−` `+` |
-| Drag the reproducer | lift it, slide it, let go to drop it |
-| Drag the cylinder | scratch |
-| The box | click it for the cylinders, the lid to open it, the key to lock it · `C` |
-| Record | `R`, or drop an audio file anywhere |
-| Views | `1` overview · `2` horn · `3` mechanism · `4` stylus close-up |
-
-## Run it
-
-The browser loads `src/` as is, so any static server works (ES modules don't load from `file://`):
+## Running it
 
 ```bash
-npm run dev
+$ npm run dev
 ```
 
-Then go to <http://localhost:8000>. The microphone needs `localhost` or HTTPS.
+That's it. [`dev.mjs`](dev.mjs) serves the repository as is on [localhost:8000](http://localhost:8000): ES modules don't load from `file://`, and the microphone needs `localhost` or HTTPS. Edit, then reload.
+
+There's nothing to install. Node 22+ is enough for the server, the build and the tests:
 
 ```bash
-npm test        # the acoustics and the ball-in-groove contact, offline in Node
-npm run build   # copies index.html and src/ into dist/ (what Vercel serves)
+$ npm run build   # dist/: index.html, src/
+$ npm test        # offline checks of the physics: horn and diaphragm response, clipping, velocity pickup, stylus flight, ball contact
 ```
 
-URL options for testing: `?view=stylus`, `?tour=5`, `?docs`, `?play`, `?t=30` (seconds into the cylinder), `?cyl=blank`, `?fixed` (no adaptive resolution).
+In the page, the help button opens a guided tour and the book opens the documentation. For testing, the URL takes `?view=stylus`, `?tour=5`, `?docs`, `?play`, `?t=30` (seconds in), `?cyl=blank` and `?fixed` (no adaptive resolution).
 
 ## How it works
 
-One loop runs 48,000 times a second. The clockwork says where the needle is; recording writes a depth there, playback reads it back.
+One loop runs 48,000 times a second ([`src/audio.js`](src/audio.js)). The clockwork says where the ball is; recording writes a depth there, and playback reads it back.
 
-1. **Where the needle is.** A screw with 100 threads per inch moves the needle one groove per turn, so a position is just "turns since the start". Each turn holds 4,096 depths; recording averages into them and playback reads between them, so any speed and direction work.
-2. **Recording.** Two high-pass filters remove the bass a horn can't hold, and a 2.45 ms comb (one trip along a 42 cm horn and back) adds its honk. A resonant low-pass at 2.3 kHz plays the glass diaphragm, and `tanh` soft clipping keeps the cut within ±44 µm. Each groove cell keeps the average of the sound that passed over it, plus a faint grain you later hear as hiss. A file that doesn't fit is trimmed, or cut slower, down to 120 rpm, as early cylinders were.
-3. **The record is an array.** 4,096 × 371 depths in micrometres (369 grooves plus two guard rows). The GPU draws it, the needle plays it, and the browser saves it in IndexedDB. The built-in cylinder gets 300 dust specks and three scratches.
-4. **Drawing the groove.** Close up, a fine mesh is displaced by the depths, joined by a Catmull–Rom spline so extreme zoom shows hills, not steps. Far away, each groove fades to its average depth. Lighting is physically based (GGX, clear-coat wax, soft shadows, ambient occlusion, bloom, AgX tone mapping).
-5. **Playback.** A 70 µm ball rests on the groove walls and can't fit into dips smaller than itself (morphological dilation). The reproducer's weight can pull the needle down only so fast, so when the groove drops faster the needle flies for a moment and buzzes. What you hear is the needle's velocity, filtered by the diaphragm (2 kHz), its weight, the wooden box (480 Hz) and a small Schroeder room.
-6. **Sound in space.** Inverse distance law, a directivity cone, an off-axis low-pass (walking around the horn makes it duller) and the browser's HRTF. Lever, crank, lid and key clicks are synthesized and placed where the part is.
-7. **Clockwork.** The governor eases toward 160 rpm. A full wind lasts 1,100 turns, about 7 minutes; below 12 % the music sags, and slow and fast speed wobbles grow as the spring runs out. Scratching pulls the cylinder through a stiff damped spring while the belt slips.
-8. **Volume.** Turning the knob down makes the sound quieter and duller at once, like a damper in the horn. Past three quarters it overdrives.
+**1️⃣ Turn.** The clockwork ([`src/mechanics.js`](src/mechanics.js)) spins the mandrel: a governor with a first-order lag, a spring that drains linearly, slow and fast speed wobbles. A feed screw with 100 threads per inch moves the carriage one groove per turn, so a position is just "turns since the start".
 
-The in-app documentation (the book icon) draws its figures from the code's own functions.
+**2️⃣ Cut.** The recorder ([`src/acoustics.js`](src/acoustics.js), [`src/cut.js`](src/cut.js)) is the acoustic chain of the era as [biquad filters](https://en.wikipedia.org/wiki/Digital_biquad_filter). Two high-passes drop the bass a horn can't hold, and a 2.45 ms echo (one trip along a 42 cm horn and back) adds its honk. The glass diaphragm rings at 2.3 kHz, and `tanh` soft clipping keeps the cutter within ±44 µm. Each cell of the groove keeps the average of the sound that passed over it, plus the grain of the wax.
 
-## Project layout
+**3️⃣ Keep.** The record is an array ([`src/groove.js`](src/groove.js)): 4,096 × 371 depths in micrometres, 369 grooves plus two guard rows. The GPU draws it, the ball plays it, and IndexedDB keeps your recordings at 16 bits ([`src/storage.js`](src/storage.js)).
 
-```
-index.html            the page: canvas, toolbar, tour card, docs, dialogs
-src/style.css         its styles
-src/main.js           entry point: loads the modules in order, URL options, frame loop
-test/                 offline tests of the physics (node --test)
-build.mjs             copies the site into dist/
-```
+**4️⃣ Play.** The reproducer ([`src/contact.js`](src/contact.js), [`src/acoustics.js`](src/acoustics.js)) rests a 70 µm ball on the groove walls. Along the groove it rides over dips smaller than itself ([dilation](https://en.wikipedia.org/wiki/Dilation_(morphology))), and when the groove falls faster than the weight can follow, it flies for a moment and buzzes. What you hear is its velocity, through the diaphragm (2 kHz), its mass, the wooden box (480 Hz) and a small Schroeder room.
 
-`src/`, from the numbers up:
+**5️⃣ Draw.** The machine ([`src/scene.js`](src/scene.js), [`src/render.js`](src/render.js), [`src/shaders.js`](src/shaders.js)) is built in code from lathes and sweeps ([`src/mesh.js`](src/mesh.js)), with nothing loaded from a file. Close up, a fine mesh is pushed in by the depths, joined by a Catmull–Rom spline so extreme zoom shows hills, not steps; far away, each groove fades to its average depth. The light is physically based: GGX, clear-coat wax, image-based lighting, soft shadows, ambient occlusion, bloom and AgX tone mapping.
 
-| Module | What it holds |
-| --- | --- |
-| `context.js` | WebGL2 context, extensions, URL options |
-| `math.js` · `mesh.js` · `gl-util.js` | vectors and matrices, mesh building, WebGL helpers |
-| `constants.js` | the machine in numbers: cylinder, feed screw, groove, stylus, horn |
-| `state.js` | shared runtime state: clockwork, cylinder changer, audio engine, pose of the parts |
-| `contact.js` | the ball in the groove: contact table `Hof`, dilation taps `TAPS` |
-| `acoustics.js` | filters `BQ` `Horn` `Room`, cutter `AcousticRecorder`, reproducer `AcousticPlayer` |
-| `groove.js` · `cut.js` | the depth array, reading it `hcAt` `traceAt`; cutting `cutSignal` and wear `addWear` |
-| `scores.js` · `music.js` · `cylinders.js` | the score, the wavetable piano `renderEvents`, the cylinders on the shelf |
-| `shaders.js` · `programs.js` · `environment.js` | GLSL (groove displacement `gH` `depthAt` `VS_PATCH`), programs, image-based light |
-| `label.js` · `groove-texture.js` · `scene.js` | the box label, the groove on the GPU, the machine part by part |
-| `render.js` · `camera.js` · `picking.js` | the frame's passes, camera presets, what is under the pointer |
-| `mechanics.js` | clockwork `mechStep` `govTau` `wow` `handStep`, laws `volLaw` `coneG` `offAxisFc` |
-| `audio.js` | the audio loop `onAudio`, cutting `cutSample` `flushCut`, 3D sound `buildSpatial` `spatialUpdate`, `clack` |
-| `recording.js` · `fit.js` · `storage.js` · `swap.js` | microphone and files, fitting long files, IndexedDB, changing cylinders |
-| `hud.js` · `controls.js` · `input.js` | tooltips, menu and shelf; toolbar; pointer and keyboard (`crankDrag`) |
-| `figures.js` · `tour.js` · `docs.js` | illustrations drawn from the code's own functions, the tour, the docs |
+The in-app documentation draws its figures from these same functions ([`src/figures.js`](src/figures.js)).
 
 ## The cylinder
 
-*In the Hall of the Mountain King*, from Grieg's own piano arrangement, in a public-domain score from the Mutopia Project. The score is read as text, never run. A small wavetable piano plays it, speeding up as Grieg wrote it, and it is cut exactly like your recordings.
+The built-in cylinder is _In the Hall of the Mountain King_, from Grieg's own piano arrangement. The score is read as text from a public-domain LilyPond source ([`src/scores.js`](src/scores.js)), never run. A small wavetable piano plays it ([`src/music.js`](src/music.js)), speeding up as Grieg wrote it, with the lowest octave lifted because an acoustic horn can't carry it. It is cut exactly like your recordings, then worn with a seed, so it always wears the same way ([`src/cylinders.js`](src/cylinders.js)).
 
 ## Credits
 
-- Music: Edvard Grieg, *In the Hall of the Mountain King*, Op. 46 No. 4. [Mutopia Project](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1888) edition typeset by Coyau, public domain.
+- Music: Edvard Grieg, _In the Hall of the Mountain King_, Op. 46 No. 4. [Mutopia Project](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1888) edition typeset by Coyau, public domain.
 - Filters from Robert Bristow-Johnson's [Audio EQ Cookbook](https://www.w3.org/TR/audio-eq-cookbook/). Reverb after Manfred Schroeder. AgX tone mapping by Troy Sobotka.
 - Type: Cormorant Garamond and IBM Plex Mono.
 - Inspired by [vinyl](https://github.com/rauchg/vinyl) by Guillermo Rauch.
 
 ## License
 
-[MIT](LICENSE)
+The code is [MIT](LICENSE). The score is from a public-domain edition, and so is the cylinder cut from it.

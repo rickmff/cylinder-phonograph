@@ -1,3 +1,4 @@
 # Only what build.mjs needs: index.html and src/.
 dist
 test
+dev.mjs

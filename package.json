@@ -5,10 +5,10 @@
   "license": "MIT",
   "repository": "github:rickmff/cylinder-phonograph",
   "homepage": "https://cylinder-phonograph.vercel.app",
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "type": "module",
   "scripts": {
-    "dev": "python -m http.server 8000",
+    "dev": "node dev.mjs",
     "build": "node build.mjs",
     "test": "node --test \"test/*.test.mjs\""
   }
