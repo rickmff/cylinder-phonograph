@@ -6,6 +6,12 @@ canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-acti
 canvas#gl.drag{cursor:grabbing}
 .ui{position:fixed;z-index:2;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 12px rgba(0,0,0,.6)}
 #burger{position:fixed;z-index:6;left:clamp(16px,3.2vw,40px);bottom:clamp(16px,3.2vh,32px);width:44px;height:44px;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+#bHelp{color:#f4dca6;background:rgba(210,172,98,.17);box-shadow:inset 0 0 0 1px rgba(210,172,98,.6)}
+#bHelp:hover,#bHelp:focus-visible{color:#fff3d6;background:rgba(210,172,98,.28);box-shadow:inset 0 0 0 1px rgba(232,196,128,.9),0 0 16px rgba(210,172,98,.4)}
+#bHelp svg.ic{stroke-width:1.9}
+#bHelp:not(.seen)::after{content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;animation:helpPulse 2.4s ease-out infinite}
+@keyframes helpPulse{0%{box-shadow:0 0 0 0 rgba(210,172,98,.55)}70%,100%{box-shadow:0 0 0 9px rgba(210,172,98,0)}}
+@media (prefers-reduced-motion:reduce){#bHelp::after{animation:none}}
 #burger span{display:block;width:16px;height:1.5px;background:var(--ink);border-radius:1px;transition:transform .2s,opacity .2s}
 #burger.open span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}#burger.open span:nth-child(2){opacity:0}#burger.open span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
 #menu{position:fixed;z-index:6;left:calc(clamp(16px,3.2vw,40px) + 52px);bottom:clamp(16px,3.2vh,32px);max-width:calc(100vw - clamp(16px,3.2vw,40px) - 60px);background:rgba(16,12,9,.80);border:1px solid rgba(236,223,198,.12);border-radius:23px;padding:1px 3px;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.45)}
