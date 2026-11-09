@@ -1,0 +1,15 @@
+﻿{
+  "name": "cylinder-phonograph",
+  "private": true,
+  "description": "An Edison wax-cylinder phonograph in your browser",
+  "license": "MIT",
+  "repository": "github:rickmff/cylinder-phonograph",
+  "homepage": "https://cylinder-phonograph.vercel.app",
+  "engines": { "node": ">=20" },
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "build": "node build.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  }
+}

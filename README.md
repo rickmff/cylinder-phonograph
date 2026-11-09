@@ -2,7 +2,7 @@
 
 An Edison wax-cylinder phonograph in your browser. Sound is cut into a groove of numbers, the GPU carves those numbers into wax, and a tiny sapphire ball plays them back. No recording of a real phonograph is used: every crackle and wobble comes from the simulation.
 
-One HTML file, WebGL2 and Web Audio, no libraries.
+Plain ES modules, WebGL2 and Web Audio: no libraries, no bundler.
 
 **Live: <https://cylinder-phonograph.vercel.app>**
 
@@ -31,13 +31,20 @@ One HTML file, WebGL2 and Web Audio, no libraries.
 
 ## Run it
 
-Open `index.html` through any static server:
+The browser loads `src/` as is, so any static server works (ES modules don't load from `file://`):
 
 ```bash
-python -m http.server 8000
+npm run dev
 ```
 
-Then go to <http://localhost:8000>. Opening the file directly also works in most browsers, but the microphone needs `localhost` or HTTPS.
+Then go to <http://localhost:8000>. The microphone needs `localhost` or HTTPS.
+
+```bash
+npm test        # the acoustics and the ball-in-groove contact, offline in Node
+npm run build   # copies index.html and src/ into dist/ (what Vercel serves)
+```
+
+URL options for testing: `?view=stylus`, `?tour=5`, `?docs`, `?play`, `?t=30` (seconds into the cylinder), `?cyl=blank`, `?fixed` (no adaptive resolution).
 
 ## How it works
 
@@ -54,21 +61,36 @@ One loop runs 48,000 times a second. The clockwork says where the needle is; rec
 
 The in-app documentation (the book icon) draws its figures from the code's own functions.
 
-## Source map
+## Project layout
 
-| Part | Functions |
+```
+index.html            the page: canvas, toolbar, tour card, docs, dialogs
+src/style.css         its styles
+src/main.js           entry point: loads the modules in order, URL options, frame loop
+test/                 offline tests of the physics (node --test)
+build.mjs             copies the site into dist/
+```
+
+`src/`, from the numbers up:
+
+| Module | What it holds |
 | --- | --- |
-| Filters | `BQ` `Horn` `Room` |
-| Recording | `AcousticRecorder` `cutSample` `flushCut` `cutSignal` |
-| Wear | `addWear` |
-| Ball and groove | `Hof` `hcAt` `traceAt` |
-| Needle and reproducer | `AcousticPlayer` |
-| Drawing the groove | `gH` `depthAt` `VS_PATCH` |
-| Clockwork | `mechStep` `govTau` `wow` `handStep` `crankDrag` |
-| Sound in space | `buildSpatial` `spatialUpdate` `coneG` `offAxisFc` `clack` |
-| Volume | `volLaw` |
-| Audio loop | `onAudio` |
-| Score and piano | `scoreNotes` `pieceScore` `renderEvents` |
+| `context.js` | WebGL2 context, extensions, URL options |
+| `math.js` · `mesh.js` · `gl-util.js` | vectors and matrices, mesh building, WebGL helpers |
+| `constants.js` | the machine in numbers: cylinder, feed screw, groove, stylus, horn |
+| `state.js` | shared runtime state: clockwork, cylinder changer, audio engine, pose of the parts |
+| `contact.js` | the ball in the groove: contact table `Hof`, dilation taps `TAPS` |
+| `acoustics.js` | filters `BQ` `Horn` `Room`, cutter `AcousticRecorder`, reproducer `AcousticPlayer` |
+| `groove.js` · `cut.js` | the depth array, reading it `hcAt` `traceAt`; cutting `cutSignal` and wear `addWear` |
+| `scores.js` · `music.js` · `cylinders.js` | the score, the wavetable piano `renderEvents`, the cylinders on the shelf |
+| `shaders.js` · `programs.js` · `environment.js` | GLSL (groove displacement `gH` `depthAt` `VS_PATCH`), programs, image-based light |
+| `label.js` · `groove-texture.js` · `scene.js` | the box label, the groove on the GPU, the machine part by part |
+| `render.js` · `camera.js` · `picking.js` | the frame's passes, camera presets, what is under the pointer |
+| `mechanics.js` | clockwork `mechStep` `govTau` `wow` `handStep`, laws `volLaw` `coneG` `offAxisFc` |
+| `audio.js` | the audio loop `onAudio`, cutting `cutSample` `flushCut`, 3D sound `buildSpatial` `spatialUpdate`, `clack` |
+| `recording.js` · `fit.js` · `storage.js` · `swap.js` | microphone and files, fitting long files, IndexedDB, changing cylinders |
+| `hud.js` · `controls.js` · `input.js` | tooltips, menu and shelf; toolbar; pointer and keyboard (`crankDrag`) |
+| `figures.js` · `tour.js` · `docs.js` | illustrations drawn from the code's own functions, the tour, the docs |
 
 ## The cylinder
 
